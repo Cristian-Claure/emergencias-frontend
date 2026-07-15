@@ -1,4 +1,4 @@
-const CACHE_NAME = "auxilio-ai-v1";
+const CACHE_NAME = "auxilio-ai-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/favicon/favicon.ico",
@@ -77,10 +77,13 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(() => {
           // Offline fallback
-          return caches.match(event.request).then((cachedResponse) => {
+          return caches.match(event.request).then(async (cachedResponse) => {
             if (cachedResponse) return cachedResponse;
-            // Fallback to app shell index
-            return caches.match("/");
+            const appShell = await caches.match("/");
+            return appShell || new Response("Aplicación sin conexión.", {
+              status: 503,
+              headers: { "Content-Type": "text/plain; charset=utf-8" }
+            });
           });
         })
     );
@@ -101,7 +104,10 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // Catch and ignore network failures when offline (the cached asset will be served)
+          return new Response("Recurso no disponible sin conexión.", {
+            status: 503,
+            headers: { "Content-Type": "text/plain; charset=utf-8" }
+          });
         });
 
       return cachedResponse || fetchPromise;

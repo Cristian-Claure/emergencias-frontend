@@ -12,10 +12,16 @@ import {
 } from "./mockData";
 
 const getApiBaseUrl = (): string => {
-  if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-    return "https://backend-si2-taller-385056433848.us-central1.run.app";
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ) {
+    return configuredUrl || "http://localhost:8000";
   }
-  return process.env.NEXT_PUBLIC_API_URL || "https://backend-si2-taller-385056433848.us-central1.run.app";
+
+  return configuredUrl || "https://backend-si2-taller-385056433848.us-central1.run.app";
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -218,7 +224,7 @@ const normalizeIncidente = (inc: any): Incidente => {
     taller_nombre: inc.taller?.nombre || inc.taller_nombre || "",
     tecnico_asignado: inc.tecnico?.nombre || inc.tecnico_asignado || "",
     tecnico_telefono: inc.tecnico?.telefono || inc.tecnico_telefono || "",
-    tecnico_id: inc.tecnico_id || inc.tecnico?.id || "tech_01",
+    tecnico_id: inc.tecnico_id || inc.tecnico?.id || undefined,
     tecnico_lat: inc.tecnico?.latitud !== undefined ? inc.tecnico.latitud : (inc.tecnico_lat || undefined),
     tecnico_lng: inc.tecnico?.longitud !== undefined ? inc.tecnico.longitud : (inc.tecnico_lng || undefined),
     costo_final: inc.pagos?.[0]?.monto_total || inc.costo_final,
@@ -1200,6 +1206,45 @@ export const apiService = {
         { id: "tech_03", nombre: "Lucas Rivas", telefono: "+591 733 444 555", disponible: false }
       ];
     }
+  },
+
+  getTecnicosDisponiblesParaIncidente: async (
+    tenantId: string,
+    incidenteId: string | number
+  ): Promise<any[]> => {
+    const res = await fetch(
+      `${API_BASE_URL}/api/v1/incidentes/${incidenteId}/tecnicos-disponibles`,
+      { headers: getHeaders(tenantId) }
+    );
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.detail || "No se pudieron consultar técnicos disponibles.");
+    }
+    return Array.isArray(data) ? data : [];
+  },
+
+  reasignarTecnico: async (
+    tenantId: string,
+    incidenteId: string | number,
+    tecnicoId: string,
+    motivo: string
+  ): Promise<Incidente> => {
+    const res = await fetch(
+      `${API_BASE_URL}/api/v1/incidentes/${incidenteId}/reasignar-tecnico`,
+      {
+        method: "POST",
+        headers: getHeaders(tenantId),
+        body: JSON.stringify({
+          tecnico_id: tecnicoId,
+          motivo
+        })
+      }
+    );
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.detail || "No se pudo completar la reasignación.");
+    }
+    return normalizeIncidente(data);
   },
 
   createTecnico: async (tenantId: string, payload: { nombre: string; telefono: string; disponible: boolean }): Promise<any> => {

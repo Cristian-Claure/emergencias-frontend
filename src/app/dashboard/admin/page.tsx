@@ -245,7 +245,15 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
+    // En desarrollo el Service Worker y el prompt PWA permanecen desactivados
+    // para no interferir con Webpack/HMR ni duplicar listeners.
+    if (process.env.NODE_ENV !== "production") {
+      setDeferredPrompt(null);
+      setIsPwaInstallable(false);
+      return;
+    }
+
     // Check standalone mode initially
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
     if (isStandalone) {
@@ -1175,7 +1183,7 @@ export default function AdminDashboard() {
                   <div className="glass-panel p-5 relative overflow-hidden flex flex-col items-center justify-center text-center sm:items-stretch sm:justify-between sm:text-left min-h-[120px] sm:min-h-[130px]">
                     <div className="flex flex-col items-center sm:flex-row sm:justify-between sm:items-start w-full gap-1">
                       <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider flex items-center gap-1.5 justify-center sm:justify-start">
-                        <ShieldCheck className="w-4 h-4 text-emerald-500" /> Atendidos Hoy
+                        <ShieldCheck className="w-4 h-4 text-emerald-500" /> Servicios Completados
                       </span>
                       <span className="px-1.5 py-0.5 bg-emerald-50 border border-emerald-100 rounded text-[7.5px] font-extrabold text-emerald-600 uppercase tracking-wider">
                         Finalizado
@@ -1191,17 +1199,17 @@ export default function AdminDashboard() {
                   <div className="glass-panel p-5 relative overflow-hidden flex flex-col items-center justify-center text-center sm:items-stretch sm:justify-between sm:text-left min-h-[120px] sm:min-h-[130px]">
                     <div className="flex flex-col items-center sm:flex-row sm:justify-between sm:items-start w-full gap-1">
                       <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider flex items-center gap-1.5 justify-center sm:justify-start">
-                        <Clock className="w-4 h-4 text-amber-500" /> Promedio Asignación
+                        <Clock className="w-4 h-4 text-amber-500" /> Tiempo Promedio
                       </span>
                       <span className="px-1.5 py-0.5 bg-amber-50 border border-amber-100 rounded text-[7.5px] font-extrabold text-amber-600 uppercase tracking-wider">
-                        Respuesta IA
+                        Operación
                       </span>
                     </div>
                     <div className="mt-2.5 sm:mt-3 flex flex-col items-center sm:items-start">
                       <p className="text-3xl sm:text-4.5xl font-extrabold text-slate-900 tracking-tight font-mono">
                         {kpiResumen.tiempo_resolucion_promedio_min} <span className="text-xs font-bold text-slate-500 font-sans">Min</span>
                       </p>
-                      <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wide block mt-1">Tiempo de despacho</span>
+                      <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wide block mt-1">Desde el reporte hasta la atención</span>
                     </div>
                   </div>
 

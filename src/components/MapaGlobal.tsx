@@ -114,19 +114,41 @@ export default function MapaGlobal({
     i.estado === "atendido"
   );
 
-  // Get active technicians in route (using real coordinates if available, otherwise fallback to simulated offset)
-  const activeTechs = incidents
-    .filter(i => (i.estado === "en_camino" || i.estado === "en_proceso") && i.latitude && i.longitude)
-    .map(inc => {
-      const hasRealCoords = inc.tecnico_lat !== undefined && inc.tecnico_lng !== undefined;
-      return {
-        id: `t_${inc.tecnico_id || inc.id}`,
-        name: inc.tecnico_asignado || "Técnico Especializado",
-        lat: hasRealCoords ? inc.tecnico_lat! : inc.latitude + 0.003,
-        lng: hasRealCoords ? inc.tecnico_lng! : inc.longitude - 0.003,
-        job: inc.vehiculo_placa
-      };
-    });
+  // Get active technicians in route. A technician can appear in more than one
+  // incident response, so Map guarantees one marker and one unique React key.
+  const activeTechs = Array.from(
+    incidents
+      .filter(i =>
+        (i.estado === "en_camino" || i.estado === "en_proceso") &&
+        typeof i.latitude === "number" &&
+        typeof i.longitude === "number" &&
+        Boolean(i.tecnico_id)
+      )
+      .reduce((unique, inc) => {
+        const technicianId = String(inc.tecnico_id);
+        if (unique.has(technicianId)) return unique;
+
+        const hasRealCoords =
+          typeof inc.tecnico_lat === "number" &&
+          typeof inc.tecnico_lng === "number";
+
+        unique.set(technicianId, {
+          id: `t_${technicianId}`,
+          name: inc.tecnico_asignado || "Técnico Especializado",
+          lat: hasRealCoords ? inc.tecnico_lat! : inc.latitude + 0.003,
+          lng: hasRealCoords ? inc.tecnico_lng! : inc.longitude - 0.003,
+          job: inc.vehiculo_placa
+        });
+        return unique;
+      }, new Map<string, {
+        id: string;
+        name: string;
+        lat: number;
+        lng: number;
+        job: string;
+      }>())
+      .values()
+  );
 
   const defaultPos: [number, number] = [-17.7833, -63.1812];
 
